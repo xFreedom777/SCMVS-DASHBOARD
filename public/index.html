@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCMVS Real-time Dashboard v2.0</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="style.css?v=4">
+    <style>
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            margin-right: 15px;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        .btn-sim {
+            background-color: var(--accent); color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem;
+            cursor: pointer; font-weight: 600; font-size: 0.9rem; border: none; box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.4);
+            text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s ease;
+        }
+        .btn-sim:hover { background-color: var(--accent-hover); transform: translateY(-2px); }
+        .btn-sim.active { background-color: var(--ng-color); box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.4); }
+        
+        .btn-pdf {
+            background: linear-gradient(135deg, #ef4444, #b91c1c); color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem;
+            cursor: pointer; font-weight: 600; font-size: 0.9rem; border: none; box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.4);
+            text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s ease;
+        }
+        .btn-pdf:hover { transform: translateY(-2px); box-shadow: 0 6px 20px 0 rgba(239, 68, 68, 0.6); }
+
+        .tier-list-container {
+            display: flex; flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto; max-height: 250px;
+        }
+        .tier-item {
+            background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; border-left: 4px solid var(--ng-color);
+            display: flex; justify-content: space-between; align-items: center; font-weight: 600;
+        }
+        .tier-rank { font-size: 1.2rem; font-weight: 800; color: #facc15; margin-right: 10px; width: 30px; }
+        .tier-name { flex-grow: 1; font-size: 0.9rem; }
+        .tier-count { color: var(--ng-color); font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+    <div class="app-container" id="printableArea">
+        <!-- Sidebar / Header -->
+        <header class="header" data-html2canvas-ignore="true">
+            <div class="logo">
+                <span class="logo-icon">📷</span>
+                <div>
+                    <h1>SCMVS <span>Dashboard</span></h1>
+                    <div style="font-size:0.75rem; color: var(--accent); margin-top:2px; font-weight:600; letter-spacing: 1px;">AJINOMOTO EDITION v2.0</div>
+                </div>
+            </div>
+            <div class="upload-section">
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div class="live-badge" id="connStatus">
+                        <div class="live-dot"></div> Live
+                    </div>
+                    <select id="dateFilter" style="background: var(--bg-panel); color: var(--text-primary); border: 1px solid var(--border-color); outline: none; padding: 0.75rem 1rem; border-radius: 0.5rem; font-family: 'Inter'; font-weight: 600;">
+                        <option value="all">📅 All Dates</option>
+                    </select>
+                    
+                    <button class="btn-sim" id="btnToggleSim">▶ Start Simulator</button>
+                    <button class="btn-export" id="btnExportCSV">⬇ CSV</button>
+                    <button class="btn-pdf" id="btnExportPDF">📄 PDF Report</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="dashboard-content" id="dashboardContent">
+                
+                <!-- Report Header (Hidden on Web, Visible in PDF) -->
+                <div id="pdfHeader" style="display:none; text-align: center; margin-bottom: 20px; color: black !important;">
+                    <h1 style="font-size: 24px; color: #1e293b;">AJINOMOTO SCMVS - Executive Inspection Report</h1>
+                    <p style="font-size: 14px; color: #64748b;" id="pdfDateLabel"></p>
+                    <hr style="border: 1px solid #cbd5e1; margin-top: 15px;">
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-title">Total Inspected</div>
+                        <div class="stat-value" id="valTotal" style="color: var(--accent);">0</div>
+                    </div>
+                    <div class="stat-card ok">
+                        <div class="stat-title">Total OK</div>
+                        <div class="stat-value" id="valOK">0</div>
+                    </div>
+                    <div class="stat-card ng" id="cardNG">
+                        <div class="stat-title">Total NG</div>
+                        <div class="stat-value" id="valNG">0</div>
+                    </div>
+                    <div class="stat-card yield">
+                        <div class="stat-title">Yield Rate</div>
+                        <div class="stat-value" id="valYield">0.00%</div>
+                    </div>
+                </div>
+
+                <!-- Mid Section (3 Columns) -->
+                <div class="mid-section" style="grid-template-columns: 2fr 1fr 1fr;">
+                    <!-- Charts Section -->
+                    <div class="panel">
+                        <h3>Production Trend (Hourly)</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="resultChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- NG Tier List Section -->
+                    <div class="panel">
+                        <h3 style="color: #facc15; border-bottom-color: rgba(250, 204, 21, 0.3);">🏆 NG Tier List</h3>
+                        <div class="tier-list-container" id="tierListContainer">
+                            <div style="text-align: center; color: var(--text-secondary); margin-top: 20px;">No NG Data</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Live NG Snapshot -->
+                    <div class="panel">
+                        <h3 style="color: var(--ng-color); border-bottom-color: rgba(239, 68, 68, 0.3);">Latest NG Snapshot</h3>
+                        <div class="live-ng-container" id="liveNgContainer" style="background: rgba(255,255,255,0.02);">
+                            <div class="live-ng-placeholder" id="liveNgPlaceholder">
+                                <span style="font-size: 2rem;">🛡️</span><br>Waiting for NG...
+                            </div>
+                            <img id="liveNgImage" src="" alt="Latest NG">
+                            <div class="ng-overlay-border" id="ngBorderAlert"></div>
+                            <div class="ng-timestamp" id="liveNgTimestamp" style="font-size: 0.65rem;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Gallery -->
+                <div class="gallery-section" data-html2canvas-ignore="true">
+                    <div class="gallery-header">
+                        <h3>Image Data Log (Real-time)</h3>
+                        <div class="gallery-filters">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn ok" data-filter="OK">OK</button>
+                            <button class="filter-btn ng" data-filter="NG">NG</button>
+                        </div>
+                    </div>
+                    <div class="image-grid" id="imageGrid">
+                        <!-- Images injected here -->
+                    </div>
+                </div>
+
+                <!-- PDF Image Gallery Snippet (Hidden on Web) -->
+                <div id="pdfGallery" style="display:none; margin-top: 20px;">
+                    <h3 style="color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 15px;">Recent NG Images Evidence</h3>
+                    <div id="pdfImageGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal" id="imageModal" data-html2canvas-ignore="true">
+        <span class="modal-close" id="modalClose">&times;</span>
+        <img class="modal-content" id="modalImg">
+        <div id="modalCaption"></div>
+    </div>
+
+    <script src="script.js?v=4"></script>
+</body>
+</html>

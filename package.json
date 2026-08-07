@@ -1,0 +1,15 @@
+{
+  "name": "scmvs-realtime-dashboard",
+  "version": "2.0.0",
+  "description": "Real-time SCMVS Dashboard using Chokidar and Socket.io",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
+}
