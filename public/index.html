@@ -52,6 +52,14 @@
         }
         .btn-pdf:hover { transform: translateY(-2px); box-shadow: 0 6px 20px 0 rgba(239, 68, 68, 0.6); }
 
+        .btn-reset {
+            background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem;
+            cursor: pointer; font-weight: 600; font-size: 0.9rem; border: none; box-shadow: 0 4px 14px 0 rgba(245, 158, 11, 0.4);
+            text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s ease;
+        }
+        .btn-reset:hover { transform: translateY(-2px); box-shadow: 0 6px 20px 0 rgba(245, 158, 11, 0.6); }
+        .btn-reset:active { transform: scale(0.96); }
+
         .tier-list-container {
             display: flex; flex-direction: column; gap: 10px; flex-grow: 1; overflow-y: auto; max-height: 250px;
         }
@@ -85,6 +93,7 @@
                     </select>
                     
                     <button class="btn-sim" id="btnToggleSim">▶ Start Simulator</button>
+                    <button class="btn-reset" id="btnReset">🗑 Reset Data</button>
                     <button class="btn-export" id="btnExportCSV">⬇ CSV</button>
                     <button class="btn-pdf" id="btnExportPDF">📄 PDF Report</button>
                 </div>
@@ -95,12 +104,113 @@
         <main class="main-content">
             <div class="dashboard-content" id="dashboardContent">
                 
-                <!-- Report Header (Hidden on Web, Visible in PDF) -->
-                <div id="pdfHeader" style="display:none; text-align: center; margin-bottom: 20px; color: black !important;">
-                    <h1 style="font-size: 24px; color: #1e293b;">AJINOMOTO SCMVS - Executive Inspection Report</h1>
-                    <p style="font-size: 14px; color: #64748b;" id="pdfDateLabel"></p>
-                    <hr style="border: 1px solid #cbd5e1; margin-top: 15px;">
+                <!-- =====================================================
+                     PREMIUM PDF REPORT TEMPLATE (Hidden on Web, Shown in PDF)
+                     ===================================================== -->
+                <div id="pdfReport" style="display:none;">
+
+                    <!-- PAGE 1: COVER + KPIs + CHART + TIER -->
+                    <div class="rpt-page" id="rptPage1">
+
+                        <!-- Header Bar -->
+                        <div class="rpt-header">
+                            <div class="rpt-header-left">
+                                <div class="rpt-logo-box">
+                                    <span class="rpt-logo-icon">📷</span>
+                                    <div>
+                                        <div class="rpt-logo-title">SCMVS</div>
+                                        <div class="rpt-logo-sub">Smart Camera Machine Vision System</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rpt-header-center">
+                                <div class="rpt-report-title">Executive Inspection Report</div>
+                                <div class="rpt-company">AJINOMOTO CO., (THAILAND) LTD.</div>
+                            </div>
+                            <div class="rpt-header-right">
+                                <div class="rpt-meta-row"><span class="rpt-meta-label">📅 Date</span><span class="rpt-meta-val" id="rptDateVal">—</span></div>
+                                <div class="rpt-meta-row"><span class="rpt-meta-label">🕐 Generated</span><span class="rpt-meta-val" id="rptGenVal">—</span></div>
+                                <div class="rpt-meta-row"><span class="rpt-meta-label">📋 Report</span><span class="rpt-meta-val">SCMVS-EIR</span></div>
+                            </div>
+                        </div>
+                        <div class="rpt-accent-bar"></div>
+
+                        <!-- KPI Cards -->
+                        <div class="rpt-kpi-row">
+                            <div class="rpt-kpi-card rpt-kpi-blue">
+                                <div class="rpt-kpi-icon">🔍</div>
+                                <div class="rpt-kpi-label">TOTAL INSPECTED</div>
+                                <div class="rpt-kpi-value" id="rptTotal">0</div>
+                                <div class="rpt-kpi-sub">pieces</div>
+                            </div>
+                            <div class="rpt-kpi-card rpt-kpi-green">
+                                <div class="rpt-kpi-icon">✅</div>
+                                <div class="rpt-kpi-label">TOTAL OK</div>
+                                <div class="rpt-kpi-value" id="rptOK">0</div>
+                                <div class="rpt-kpi-sub">passed</div>
+                            </div>
+                            <div class="rpt-kpi-card rpt-kpi-red">
+                                <div class="rpt-kpi-icon">⚠️</div>
+                                <div class="rpt-kpi-label">TOTAL NG</div>
+                                <div class="rpt-kpi-value" id="rptNG">0</div>
+                                <div class="rpt-kpi-sub">defects</div>
+                            </div>
+                            <div class="rpt-kpi-card rpt-kpi-purple">
+                                <div class="rpt-kpi-icon">📊</div>
+                                <div class="rpt-kpi-label">YIELD RATE</div>
+                                <div class="rpt-kpi-value" id="rptYield">0.00%</div>
+                                <div class="rpt-kpi-sub">quality</div>
+                            </div>
+                        </div>
+
+                        <!-- Chart + Tier side by side -->
+                        <div class="rpt-body-row">
+                            <div class="rpt-chart-panel">
+                                <div class="rpt-panel-title">📈 Production Trend (Hourly)</div>
+                                <canvas id="rptChart" height="180"></canvas>
+                            </div>
+                            <div class="rpt-tier-panel">
+                                <div class="rpt-panel-title">🏆 NG Defect Tier List</div>
+                                <div id="rptTierBody" class="rpt-tier-body">
+                                    <div class="rpt-tier-empty">No NG data recorded</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="rpt-footer">
+                            <span>AJINOMOTO SCMVS v2.0 — Confidential</span>
+                            <span id="rptFooterDate">—</span>
+                            <span>Page 1</span>
+                        </div>
+                    </div>
+
+                    <!-- PAGE 2: NG IMAGE EVIDENCE -->
+                    <div class="rpt-page" id="rptPage2">
+                        <div class="rpt-header rpt-header-compact">
+                            <div class="rpt-logo-box">
+                                <span class="rpt-logo-icon" style="font-size:1.2rem;">📷</span>
+                                <span class="rpt-logo-title" style="font-size:1rem;">SCMVS</span>
+                            </div>
+                            <div style="font-size:1rem; font-weight:700; color:#1e293b;">NG Image Evidence — <span id="rptEvLabel">All Dates</span></div>
+                            <div class="rpt-meta-val" id="rptEvGen" style="font-size:0.75rem;">—</div>
+                        </div>
+                        <div class="rpt-accent-bar"></div>
+
+                        <div class="rpt-evidence-section">
+                            <div id="rptImageGrid" class="rpt-img-grid"></div>
+                            <div id="rptNoNG" class="rpt-no-ng" style="display:none;">✅ No NG defects recorded for this period.</div>
+                        </div>
+
+                        <div class="rpt-footer">
+                            <span>AJINOMOTO SCMVS v2.0 — Confidential</span>
+                            <span id="rptFooterDate2">—</span>
+                            <span>Page 2</span>
+                        </div>
+                    </div>
+
                 </div>
+                <!-- END PDF REPORT TEMPLATE -->
 
                 <!-- Summary Cards -->
                 <div class="stats-grid">
@@ -169,12 +279,7 @@
                     </div>
                 </div>
 
-                <!-- PDF Image Gallery Snippet (Hidden on Web) -->
-                <div id="pdfGallery" style="display:none; margin-top: 20px;">
-                    <h3 style="color: #1e293b; border-bottom: 2px solid #cbd5e1; padding-bottom: 5px; margin-bottom: 15px;">Recent NG Images Evidence</h3>
-                    <div id="pdfImageGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                    </div>
-                </div>
+                <!-- Legacy PDF containers (kept for backward compat, unused) -->
 
             </div>
         </main>
@@ -187,6 +292,6 @@
         <div id="modalCaption"></div>
     </div>
 
-    <script src="script.js?v=4"></script>
+    <script src="script.js?v=35"></script>
 </body>
 </html>

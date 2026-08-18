@@ -277,3 +277,284 @@ body.exporting-pdf .tier-count {
 body.exporting-pdf #resultChart {
     background-color: #ffffff !important;
 }
+
+/* =========================================
+   PREMIUM REPORT TEMPLATE STYLES
+   ========================================= */
+
+/* ── Report wrapper ── */
+#pdfReport {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    color: #1e293b;
+    background: #fff;
+}
+
+/* ── Each A4 Landscape page ── */
+.rpt-page {
+    width: 277mm;
+    min-height: 190mm;
+    background: #ffffff;
+    padding: 0 0 10mm 0;
+    box-sizing: border-box;
+    page-break-after: always;
+    position: relative;
+}
+.rpt-page:last-child { page-break-after: auto; }
+
+/* ── Top header band ── */
+.rpt-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #0ea5e9 100%);
+    padding: 12px 22px;
+    gap: 16px;
+}
+.rpt-header-compact {
+    padding: 8px 22px;
+}
+
+.rpt-logo-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+}
+.rpt-logo-icon { font-size: 2rem; }
+.rpt-logo-title {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #38bdf8;
+    letter-spacing: 2px;
+}
+.rpt-logo-sub {
+    font-size: 0.6rem;
+    color: #94a3b8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.rpt-header-center {
+    text-align: center;
+    flex: 1;
+    color: #fff;
+}
+.rpt-report-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #f8fafc;
+}
+.rpt-company {
+    font-size: 0.65rem;
+    color: #7dd3fc;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.rpt-header-right {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: right;
+}
+.rpt-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+}
+.rpt-meta-label {
+    font-size: 0.6rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.rpt-meta-val {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+/* ── Accent bar under header ── */
+.rpt-accent-bar {
+    height: 4px;
+    background: linear-gradient(90deg, #0ea5e9, #10b981, #f59e0b, #ef4444);
+}
+
+/* ── KPI cards row ── */
+.rpt-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    padding: 12px 16px 8px;
+}
+.rpt-kpi-card {
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    position: relative;
+    overflow: hidden;
+}
+.rpt-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+}
+.rpt-kpi-blue   { background: #eff6ff; } .rpt-kpi-blue::before   { background: #3b82f6; }
+.rpt-kpi-green  { background: #f0fdf4; } .rpt-kpi-green::before  { background: #10b981; }
+.rpt-kpi-red    { background: #fef2f2; } .rpt-kpi-red::before    { background: #ef4444; }
+.rpt-kpi-purple { background: #faf5ff; } .rpt-kpi-purple::before { background: #8b5cf6; }
+
+.rpt-kpi-icon  { font-size: 1.3rem; margin-bottom: 3px; }
+.rpt-kpi-label { font-size: 0.55rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+.rpt-kpi-value { font-size: 1.9rem; font-weight: 900; line-height: 1.1; margin: 2px 0; }
+.rpt-kpi-sub   { font-size: 0.55rem; color: #94a3b8; font-weight: 500; }
+
+.rpt-kpi-blue   .rpt-kpi-value { color: #1d4ed8; }
+.rpt-kpi-green  .rpt-kpi-value { color: #059669; }
+.rpt-kpi-red    .rpt-kpi-value { color: #dc2626; }
+.rpt-kpi-purple .rpt-kpi-value { color: #7c3aed; }
+
+/* ── Body row: chart + tier ── */
+.rpt-body-row {
+    display: grid;
+    grid-template-columns: 3fr 1.2fr;
+    gap: 10px;
+    padding: 0 16px 8px;
+}
+.rpt-chart-panel, .rpt-tier-panel {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #fafafa;
+}
+.rpt-panel-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #334155;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+/* ── Tier table ── */
+.rpt-tier-body { display: flex; flex-direction: column; gap: 5px; }
+.rpt-tier-row {
+    display: grid;
+    grid-template-columns: 22px 20px 1fr auto;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #ef4444;
+    border-radius: 5px;
+    padding: 5px 8px;
+}
+.rpt-tier-medal { font-size: 0.85rem; text-align: center; }
+.rpt-tier-rank  { font-size: 0.65rem; font-weight: 800; color: #64748b; }
+.rpt-tier-name  { font-size: 0.65rem; font-weight: 600; color: #1e293b; }
+.rpt-tier-cnt   { font-size: 0.75rem; font-weight: 900; color: #dc2626; }
+.rpt-tier-empty { font-size: 0.7rem; color: #94a3b8; text-align: center; padding: 16px; }
+
+/* ── Page footer ── */
+.rpt-footer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 16px;
+    background: #f1f5f9;
+    border-top: 1px solid #e2e8f0;
+    font-size: 0.55rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* ── Page 2: Evidence section ── */
+.rpt-evidence-section {
+    padding: 10px 16px 45px;
+}
+.rpt-img-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+}
+.rpt-ev-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f8fafc;
+    break-inside: avoid;
+}
+.rpt-ev-img-wrap {
+    width: 100%;
+    height: 90px;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+.rpt-ev-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.rpt-ev-badge {
+    position: absolute;
+    top: 4px; left: 4px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.5rem;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+}
+.rpt-ev-info {
+    padding: 4px 5px;
+}
+.rpt-ev-recipe {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: #dc2626;
+    text-transform: uppercase;
+}
+.rpt-ev-name {
+    font-size: 0.45rem;
+    color: #94a3b8;
+    word-break: break-all;
+    line-height: 1.3;
+    margin-top: 1px;
+}
+.rpt-no-ng {
+    text-align: center;
+    padding: 40px;
+    font-size: 1rem;
+    color: #10b981;
+    font-weight: 600;
+}
+
+/* ── Override when exporting PDF ── */
+.pdf-capturing {
+    background: #ffffff !important;
+    background-image: none !important;
+    background-color: #ffffff !important;
+}
+.pdf-capturing::before {
+    display: none !important;
+    content: none !important;
+}
+
+

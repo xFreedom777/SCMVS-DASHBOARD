@@ -105,58 +105,87 @@ app.get('/api/images', (req, res) => {
 
 // --- SIMULATION LOGIC ---
 let simInterval = null;
-const LOG_SOURCE_DIR = 'C:\\Users\\xSixtanic\\Desktop\\AJI_LOG';
+let simQueue = [];      // Ordered list of all files to inject
+let simIndex = 0;       // Current position in queue
+const LOG_SOURCE_DIR = 'C:\\Users\\xSixtanic\\Desktop\\AJI_LOCX';
 
 app.get('/api/simulation/start', (req, res) => {
     if (simInterval) return res.json({ status: 'already running' });
-    
+
     let okFiles = [];
     let ngFiles = [];
 
     try {
         const okPath = path.join(LOG_SOURCE_DIR, 'OK');
-        if (fs.existsSync(okPath)) okFiles = fs.readdirSync(okPath).map(f => path.join(okPath, f));
-        
+        if (fs.existsSync(okPath)) {
+            okFiles = fs.readdirSync(okPath)
+                .filter(f => f.match(/\.(jpg|jpeg|png|bmp)$/i))
+                .sort()
+                .map(f => ({ filePath: path.join(okPath, f), isOk: true }));
+        }
+
         const ngPath = path.join(LOG_SOURCE_DIR, 'NG');
-        if (fs.existsSync(ngPath)) ngFiles = fs.readdirSync(ngPath).map(f => path.join(ngPath, f));
+        if (fs.existsSync(ngPath)) {
+            ngFiles = fs.readdirSync(ngPath)
+                .filter(f => f.match(/\.(jpg|jpeg|png|bmp)$/i))
+                .sort()
+                .map(f => ({ filePath: path.join(ngPath, f), isOk: false }));
+        }
     } catch (err) {
         return res.status(500).json({ error: 'Log directory not found' });
     }
 
-    if (okFiles.length === 0 && ngFiles.length === 0) {
-        return res.status(400).json({ error: 'No images found in AJI_LOG folder' });
+    // Merge and sort all files by filename so they inject in real chronological order
+    simQueue = [...okFiles, ...ngFiles].sort((a, b) =>
+        path.basename(a.filePath).localeCompare(path.basename(b.filePath))
+    );
+    simIndex = 0;
+
+    if (simQueue.length === 0) {
+        return res.status(400).json({ error: 'No images found in AJI_LOCX folder' });
     }
 
-    console.log(`[SIMULATOR] Starting data feed...`);
-    io.emit('sim_status', { active: true });
+    console.log(`[SIMULATOR] Starting sequential data feed... Total files: ${simQueue.length}`);
+    io.emit('sim_status', { active: true, total: simQueue.length, index: 0 });
 
     simInterval = setInterval(() => {
-        let isOk = Math.random() < 0.8;
-        if (okFiles.length === 0) isOk = false;
-        if (ngFiles.length === 0) isOk = true;
+        // ถ้าอ่านครบทุกไฟล์แล้ว → หยุดอัตโนมัติ
+        if (simIndex >= simQueue.length) {
+            clearInterval(simInterval);
+            simInterval = null;
+            simQueue = [];
+            simIndex = 0;
+            console.log(`[SIMULATOR] ✅ All files injected. Simulator auto-stopped.`);
+            io.emit('sim_status', { active: false, finished: true });
+            return;
+        }
 
-        const sourceList = isOk ? okFiles : ngFiles;
-        const randomFile = sourceList[Math.floor(Math.random() * sourceList.length)];
-        
-        const ext = path.extname(randomFile);
-        const baseName = path.basename(randomFile, ext);
+        const { filePath, isOk } = simQueue[simIndex];
+        simIndex++;
+
+        const ext = path.extname(filePath);
+        const baseName = path.basename(filePath, ext);
         const uniqueFilename = `${baseName}_SIM_${Date.now()}${ext}`;
-        
+
         const statusFolder = isOk ? 'OK' : 'NG';
         const targetDir = path.join(FTP_FOLDER_PATH, statusFolder);
-        
+
         if (!fs.existsSync(targetDir)) {
             fs.mkdirSync(targetDir, { recursive: true });
         }
-        
+
         const targetFile = path.join(targetDir, uniqueFilename);
 
         try {
-            fs.copyFileSync(randomFile, targetFile);
-        } catch (err) {}
+            fs.copyFileSync(filePath, targetFile);
+            console.log(`[SIMULATOR] [${simIndex}/${simQueue.length}] ${isOk ? '🟢 OK' : '🔴 NG'} -> ${uniqueFilename}`);
+            io.emit('sim_status', { active: true, total: simQueue.length, index: simIndex });
+        } catch (err) {
+            console.error(`[SIMULATOR] Error copying file:`, err.message);
+        }
     }, 2000);
 
-    res.json({ status: 'started' });
+    res.json({ status: 'started', total: simQueue.length });
 });
 
 app.get('/api/simulation/stop', (req, res) => {
@@ -167,6 +196,25 @@ app.get('/api/simulation/stop', (req, res) => {
     }
     io.emit('sim_status', { active: false });
     res.json({ status: 'stopped' });
+});
+
+// --- RESET LOGIC ---
+app.get('/api/reset', (req, res) => {
+    // 1. Stop simulation if running
+    if (simInterval) {
+        clearInterval(simInterval);
+        simInterval = null;
+        io.emit('sim_status', { active: false });
+    }
+
+    // 2. Clear in-memory data only (files are NOT deleted)
+    allImages = [];
+
+    console.log(`[RESET] In-memory data cleared. Files on disk are kept.`);
+
+    // 3. Broadcast reset to all clients
+    io.emit('data_reset');
+    res.json({ status: 'reset_complete' });
 });
 
 
